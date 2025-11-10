@@ -15,18 +15,21 @@ RUN mvn package -DskipTests
 # ------------------------------------------------------------
 # Stage 2: Run the Shipping service
 # ------------------------------------------------------------
-FROM openjdk:11-jre-slim
-
-EXPOSE 8080
+FROM eclipse-temurin:11-jre
 
 WORKDIR /opt/shipping
+
+EXPOSE 8080
 
 # Environment variables
 ENV CART_ENDPOINT=cart:8080
 ENV DB_HOST=mysql
+ENV DB_USER=shipping
+ENV DB_PASS=roboshop@1
+ENV DB_NAME=shipping
 
-# Copy jar from builder stage
+# Copy built JAR from previous stage
 COPY --from=build /opt/shipping/target/shipping-1.0.jar shipping.jar
 
-# Start the service
+# Start the app
 CMD ["java", "-Xmn256m", "-Xmx768m", "-jar", "shipping.jar"]
