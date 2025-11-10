@@ -1,40 +1,32 @@
-#multi stage builds
-# FROM maven AS build
-
-# RUN apt-get update -y && apt-get -y install maven
-FROM maven AS build
+# ------------------------------------------------------------
+# Stage 1: Build the JAR file using Maven
+# ------------------------------------------------------------
+FROM maven:3.8.8-eclipse-temurin-11 AS build
 
 WORKDIR /opt/shipping
 
-COPY pom.xml /opt/shipping/
+COPY pom.xml .
 RUN mvn dependency:resolve
-COPY src /opt/shipping/src/
-RUN mvn package
+
+COPY src ./src
+RUN mvn package -DskipTests
 
 
-#Run
-
-FROM openjdk:8-jre-alpine3.9
+# ------------------------------------------------------------
+# Stage 2: Run the Shipping service
+# ------------------------------------------------------------
+FROM openjdk:11-jre-slim
 
 EXPOSE 8080
 
 WORKDIR /opt/shipping
 
+# Environment variables
 ENV CART_ENDPOINT=cart:8080
 ENV DB_HOST=mysql
 
+# Copy jar from builder stage
 COPY --from=build /opt/shipping/target/shipping-1.0.jar shipping.jar
 
-CMD [ "java", "-Xmn256m", "-Xmx768m", "-jar", "shipping.jar" ]
-
-# FROM maven
-
-# WORKDIR /opt/shipping
-
-# COPY pom.xml /opt/shipping/
-# RUN mvn dependency:resolve
-# COPY src /opt/shipping/src/
-# RUN mvn package
-# ENV CART_ENDPOINT=cart:8080
-# ENV DB_HOST=mysql
-# CMD [ "java", "-Xmn256m", "-Xmx768m", "-jar", "/opt/shipping/target/shipping-1.0.jar" ]
+# Start the service
+CMD ["java", "-Xmn256m", "-Xmx768m", "-jar", "shipping.jar"]
